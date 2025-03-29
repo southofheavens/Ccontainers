@@ -1,9 +1,14 @@
 #include "../include/vector.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <time.h>
 
 #define RED   "\x1B[31m"
 #define GREEN "\x1B[32m"
+
+#define VEC_INIT_SIZE 10
 
 /* --------------------------------------------------------------------------- */
 
@@ -20,247 +25,436 @@ int comp_desc(const void *f, const void *s)
 }
 
 /* --------------------------------------------------------------------------- */
+/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
+/* --------------------------------------------------------------------------- */
+
+void general_adding_and_deleting_elements_tests(void)
+{
+    vector vec;
+    vector_init(&vec,sizeof(int));
+
+    int some_element;
+
+    some_element = 4;
+    vpush_back(&vec,some_element);
+    some_element = 5;
+    vpush_back(&vec,some_element);
+    some_element = 6;
+    vpush_back(&vec,some_element);
+    
+    /* Analogue of push_front */
+    vec_iterator it;
+
+    it = vbegin(&vec);
+    some_element = 3;
+    vinsert(&vec,it,some_element);
+    
+    it = vbegin(&vec);
+    some_element = 2;
+    vinsert(&vec,it,some_element);
+
+    it = vbegin(&vec);
+    some_element = 1;
+    vinsert(&vec,it,some_element);
+
+    size_t i;
+    i = 1;
+    for (it = vbegin(&vec); it != vend(&vec); vadvance(&it,1)) {
+        assert(vderef(it,int) == i++);
+    }
+
+    vpop_back(&vec);
+    /* Analogue of pop_front */
+    it = vbegin(&vec);
+    verase(&vec,it);
+
+    i = 2;
+    for (it = vbegin(&vec); it != vend(&vec); vadvance(&it,1)) {
+        assert(vderef(it,int) == i++);
+    }
+
+    it = vbegin(&vec);
+    vadvance(&it,2);
+    some_element = 100;
+    vinsert(&vec,it,some_element);
+    it = vbegin(&vec);
+    vadvance(&it,3);
+    some_element = 200;
+    vinsert(&vec,it,some_element);
+
+    /* Now the lst looks like this: 2 3 100 200 4 5 */
+    it = vbegin(&vec);
+    assert(vderef(it,int) == 2);
+    vadvance(&it,1);
+    assert(vderef(it,int) == 3);
+    vadvance(&it,1);
+    assert(vderef(it,int) == 100);
+    vadvance(&it,1);
+    assert(vderef(it,int) == 200);
+    vadvance(&it,1);
+    assert(vderef(it,int) == 4);
+    vadvance(&it,1);
+    assert(vderef(it,int) == 5);
+    vadvance(&it,1);
+    assert(it == vend(&vec));
+
+    int find_elem;
+    find_elem = 100;
+    it = vfind(&vec,find_elem,comp_asc);
+    if (it != vend(&vec)) {
+        verase(&vec,it);
+    }
+
+    find_elem = 200;
+    it = vfind(&vec,find_elem,comp_asc);
+    if (it != vend(&vec)) {
+        verase(&vec,it);
+    }
+
+    int insert_elem;
+
+    it = vbegin(&vec);
+    insert_elem = 1;
+    vinsert(&vec,it,insert_elem);
+
+    it = vend(&vec);
+    insert_elem = 6;
+    vinsert(&vec,it,insert_elem);
+
+    size_t j;
+    for (j = 0; j < vsize(&vec); ++j) {
+        printf("%d\n",vat(&vec,j,int));
+    }
+    i = 1;
+    for (it = vbegin(&vec); it != vend(&vec); vadvance(&it,1)) {
+        assert(vderef(it,int) == i++);
+    }
+
+    vector_destroy(&vec);
+}
+
+/* --------------------------------------------------------------------------- */
+
+// void changing_the_size_and_capacity_tests(void)
+// {
+//     vector vec;
+//     vector_init(&vec);
+
+//     /* Size */
+
+//     size_t i;
+//     for (i = 0; i < VEC_INIT_SIZE; ++i) {
+//         vpush_back(&vec,i);
+//     }
+
+//     assert(vsize(&vec) == 10);
+
+//     vresize(&vec,12);
+//     assert(vsize(&vec) == 12);
+
+//     vec_iterator it;
+//     it = vend(&vec);
+//     vadvance(&it,-1);
+//     assert(vderef(it) == 0);
+//     vadvance(&it,-1);
+//     assert(vderef(it) == 0);
+//     vadvance(&it,-1);
+//     assert(vderef(it) == 9);
+
+//     vresize(&vec,8);
+//     assert(vsize(&vec) == 8);
+
+//     size_t vec_size;
+//     vec_size = vsize(&vec);
+//     for (i = 0; i < vec_size; ++i)
+//     {
+//         assert(vderef(vbegin(&vec)) == i);
+//         verase(&vec,vbegin(&vec));
+//     }
+
+//     assert(vempty(&vec));
+
+//     vresize(&vec, VEC_INIT_SIZE);
+//     assert(vsize(&vec) == VEC_INIT_SIZE);
+
+//     it = vbegin(&vec);
+//     for (i = 0; i < vsize(&vec); ++i)
+//     {
+//         assert(vderef(it) == 0);
+//         vadvance(&it,1);
+//     }
+
+//     vclear(&vec);
+//     assert(vempty(&vec));
+
+//     vpush_back(&vec,5);
+//     it = vbegin(&vec);
+//     vinsert(&vec,it,-5);
+//     assert(vsize(&vec) == 2);
+
+//     vclear(&vec);
+//     assert(vempty(&vec));
+
+//     /* Capacity */
+
+//     size_t curr_capacity = capacity(&vec);
+//     for (i = 0; i < curr_capacity; ++i) {
+//         vpush_back(&vec,i);
+//     }
+
+//     assert(curr_capacity == capacity(&vec));
+    
+//     vpush_back(&vec,100);
+
+//     /* Now after adding an element the capacity should be twice as big */
+//     /* as curr_capacity */
+//     assert(capacity(&vec) == 2*curr_capacity);
+
+//     reserve(&vec,curr_capacity);
+//     /* After this, the vector capacity should not change, since it */
+//     /* is greater than the requested capacity. */
+
+//     assert(capacity(&vec) != curr_capacity);
+
+//     reserve(&vec,4*curr_capacity);
+//     /* But after this, the vector capacity must change, since it is */
+//     /* less than the requested capacity. */
+
+//     assert(capacity(&vec) == 4*curr_capacity);
+
+//     vector_destroy(&vec);
+// }
+
+// /* --------------------------------------------------------------------------- */
+
+// void access_to_elements_tests(void)
+// {
+//     vector vec;
+//     vector_init(&vec);
+
+//     vpush_back(&vec,50);
+//     vpush_back(&vec,100);
+//     vpush_back(&vec,150);
+
+//     assert(vfront(&vec) == 50);
+//     assert(vback(&vec) == 150);
+
+//     vpop_back(&vec);
+
+//     assert(vfront(&vec) == 50);
+//     assert(vback(&vec) == 100);
+
+//     vpop_back(&vec);
+
+//     assert(vfront(&vec) == 50);
+//     assert(vback(&vec) == 50);
+
+//     vpop_back(&vec);
+
+//     assert(vempty(&vec));
+
+//     vec_iterator it;
+//     it = vbegin(&vec);
+//     vinsert(&vec,it,5);
+
+//     assert(vfront(&vec) == 5);
+//     assert(vback(&vec) == 5);
+
+//     vpop_back(&vec);
+
+//     assert(vempty(&vec));
+
+//     size_t i;
+//     for (i = 0; i < VEC_INIT_SIZE; ++i) {
+//         vpush_back(&vec,pow(i,2));
+//     }
+
+//     for (i = 0; i < vsize(&vec); ++i) {
+//         assert(vat(&vec,i) == pow(i,2));
+//     }
+
+//     int *pelems = data(&vec);
+
+//     for (i = 0; i < vsize(&vec); ++i) {
+//         assert(vat(&vec,i) == pelems[i]);
+//     }
+
+//     vector_destroy(&vec);
+// }
+
+// /* --------------------------------------------------------------------------- */
+
+// void changing_elements_tests(void)
+// {
+//     vector vec;
+//     vector_init(&vec);
+
+//     size_t i;
+//     for (i = 0; i < VEC_INIT_SIZE; ++i) {
+//         vpush_back(&vec, i);
+//     }
+//     /* Now the vec looks like this: 0 1 2 3 4 5 6 7 8 9 */
+
+//     vec_iterator it;
+//     it = vbegin(&vec);
+//     for (i = 0; i < vsize(&vec); ++i) 
+//     {
+//         vset_it(it,pow(i,2));
+//         vadvance(&it,1);
+//     }
+//     /* And now the vec looks like this: 0 1 4 9 16 25 36 49 64 81 */
+
+//     it = vbegin(&vec);
+//     for (i = 0; i < vsize(&vec); ++i)
+//     {
+//         assert(vderef(it) == pow(i,2));
+//         vadvance(&it,1);
+//     }
+
+//     for (i = 0; i < vsize(&vec); ++i) {
+//         vset(&vec, i, pow(i,3));
+//     }
+//     /* And now the vec look like this: 0 1 8 27 64 125 216 343 512 729 */
+
+//     for (i = 0; i < vsize(&vec); ++i) {
+//         assert(vat(&vec,i) == pow(i,3));
+//     }
+
+//     vassign_single(&vec, VEC_INIT_SIZE / 2, 5);
+//     /* And now: 5 5 5 5 5 */
+
+//     assert(vsize(&vec) == VEC_INIT_SIZE / 2);
+
+//     for (i = 0; i < vsize(&vec); ++i) {
+//         assert(vat(&vec,i) == 5);
+//     }
+
+//     int val;
+//     val = 6;
+//     size_t vec_size;
+//     vec_size = vsize(&vec);
+//     for (i = 0; i < vec_size; ++i) {
+//         vpush_back(&vec, val++);
+//     }
+//     /* And now: 5 5 5 5 5 6 7 8 9 10 */
+
+//     assert(vsize(&vec) == VEC_INIT_SIZE);
+
+//     val = 6;
+//     for (i = 0; i < vsize(&vec); ++i)
+//     {
+//         if (i < 5) {
+//             assert(vat(&vec,i) == 5);
+//         }
+//         else {
+//             assert(vat(&vec,i) == val++);
+//         }
+//     }
+
+//     vec_size = vsize(&vec);
+//     for (i = 0; i < vec_size / 2; ++i)
+//     {
+//         it = vbegin(&vec);
+//         verase(&vec,it);
+//     }
+//     /* And now: 6 7 8 9 10 */
+
+//     val = 6;
+//     for (i = 0; i < vsize(&vec); ++i) {
+//         assert(vat(&vec,i) == val++);
+//     }
+
+//     vector vec2;
+//     vector_init(&vec2);
+
+//     vassign_range(&vec2, vbegin(&vec), vend(&vec));
+//     /* Now the vec2 looks like this: 6 7 8 9 10 */
+
+//     assert(vsize(&vec2) == vsize(&vec));
+//     val = 6;
+//     for (i = 0; i < vsize(&vec2); ++i) {
+//         assert(vat(&vec2,i) == val++);
+//     }
+
+//     val = 5;
+//     vec_size = vsize(&vec2);
+//     for (i = 0; i < vec_size; ++i)
+//     {
+//         it = vbegin(&vec2);
+//         vinsert(&vec2, it, val--);
+//     }
+//     /* And now the vec2 looks like this: 1 2 3 4 5 6 7 8 9 10 */
+
+//     assert(vsize(&vec2) == VEC_INIT_SIZE);
+
+//     val = 1;
+//     for (i = 0; i < vsize(&vec2); ++i) {
+//         assert(vat(&vec2,i) == val++);
+//     }
+
+//     vswap(&vec,&vec2);
+//     /* Now the vec looks like this: 1 2 3 4 5 6 7 8 9 10 */
+//     /* And the vec2 looks like this: 6 7 8 9 10 */
+
+//     assert(vsize(&vec) == VEC_INIT_SIZE);
+//     assert(vsize(&vec2) == VEC_INIT_SIZE / 2);
+
+//     val = 1;
+//     it = vbegin(&vec);
+//     for (i = 0; i < vsize(&vec); ++i)
+//     {
+//         assert(vderef(it) == val++);
+//         vadvance(&it,1);
+//     }
+
+//     val = 6;
+//     it = vbegin(&vec2);
+//     for (i = 0; i < vsize(&vec2); ++i)
+//     {
+//         assert(vderef(it) == val++);
+//         vadvance(&it,1);
+//     }
+
+//     vswap(&vec,&vec2);
+//     /* Bring it all back */
+
+//     vassign_single(&vec,0,100); /* equivalent to lclear */
+//     assert(vempty(&vec));
+
+//     vassign_range(&vec, vbegin(&vec2), vend(&vec2));
+//     /* Now the lst looks like this: 1 2 3 4 5 6 7 8 9 10 */
+//     /* And the lst2 looks like this: 1 2 3 4 5 6 7 8 9 10 */
+
+//     assert(vsize(&vec) == VEC_INIT_SIZE);
+//     assert(vsize(&vec) == vsize(&vec2));
+
+//     val = 1;
+//     it = vbegin(&vec);
+//     vec_iterator it2;
+//     it2 = vbegin(&vec2);
+//     for (i = 0; i < vsize(&vec); ++i)
+//     {
+//         assert(vderef(it) == val);
+//         assert(vderef(it2) == val++);
+//         vadvance(&it,1);
+//         vadvance(&it2,1);
+//     }
+
+//     vector_destroy(&vec2);
+//     vector_destroy(&vec);
+// }
+
+/* --------------------------------------------------------------------------- */
 
 int main(void)
 {
     printf(GREEN "RUNNING VECTOR TESTS" RED "\n");
 
-    /* --------------------------------------------- */
-
-    vector *vec = (vector *)malloc(sizeof(vector));
-    vector_init(vec);
-
-    vpush_back(vec,3);
-    vpush_back(vec,7);
-    vpush_back(vec,9);
-
-    assert(vat(vec,0) == 3);
-    assert(vat(vec,1) == 7);
-    assert(vat(vec,2) == 9);
-
-    vec_iterator it;
-
-    it = vbegin(vec);
-    vinsert(vec, it, 1);
-
-    it = vend(vec);
-    vinsert(vec, it, 11);
-
-    it = vfind(vec,7);
-    if (it != vend(vec)) 
-    /* it == vend(vec) means that the element was not found */
-    {  
-        vinsert(vec, it, 5);
-    }
-
-    assert(vfront(vec) == 1);
-    assert(vat(vec,1) == 3);
-    assert(vat(vec,2) == 5);
-    assert(vat(vec,3) == 7);
-    assert(vat(vec,4) == 9);
-    assert(vback(vec) == 11);
-    assert(vsize(vec) == 6);
-
-    it = vfind(vec,3);
-    if (it != vend(vec)) 
-    /* it == vend(vec) means that the element was not found */
-    {
-        verase(vec,it);
-    }
-
-    it = vbegin(vec);
-    verase(vec,it);
-
-    vpop_back(vec);
-
-    assert(vat(vec,0) == 5);
-    assert(vat(vec,1) == 7);
-    assert(vat(vec,2) == 9);
-    assert(vsize(vec) == 3);
-
-    vclear(vec);
-
-    assert(vempty(vec));
-
-    vector_destroy(vec);
-    free(vec);
-
-    /* --------------------------------------------- */
-
-    vector *vec1 = (vector *)malloc(sizeof(vector));
-    vector_init(vec1);
-    vector *vec2 = (vector *)malloc(sizeof(vector));
-    vector_init(vec2);
-
-    reserve(vec1,10); 
-    
-    assert(capacity(vec1) == 10);
-
-    vpush_back(vec1,3);   /* 0 */
-    vpush_back(vec1,-4);  /* 1 */
-    vpush_back(vec1,13);  /* 2 */
-    vpush_back(vec1,41);  /* 3 */
-    vpush_back(vec1,-9);  /* 4 */
-    vpush_back(vec1,121); /* 5 */
-    vpush_back(vec1,55);  /* 6 */
-    vpush_back(vec1,-14); /* 7 */
-    vpush_back(vec1,96);  /* 8 */
-    vpush_back(vec1,0);   /* 9 */
-
-    assert(capacity(vec1) == 10);
-
-    vresize(vec2,5);
-
-    vswap(vec1,vec2);
-
-    assert(vsize(vec1) == 5);
-    assert(vsize(vec2) == 10);
-
-    vsort(vec2, comp_asc);
-
-    size_t i;
-    for (i = 0; i < vsize(vec2) - 1; ++i) {
-        assert(vat(vec2,i) <= vat(vec2,i+1));
-    }
-
-    vsort(vec2, comp_desc);
-
-    for (i = 0; i < vsize(vec2) - 1; ++i) {
-        assert(vat(vec2,i) >= vat(vec2,i+1));
-    }
-
-    vector_destroy(vec2);
-    free(vec2);
-    vector_destroy(vec1);
-    free(vec1);
-
-    /* --------------------------------------------- */
-
-    vector *vec3 = (vector *)malloc(sizeof(vector));
-    vector_init(vec3);
-    vector *vec4 = (vector *)malloc(sizeof(vector));
-    vector_init(vec4);
-
-    vassign_single(vec3,5,15);
-
-    assert(vsize(vec3) == 5);
-    
-    for (i = 0; i < vsize(vec3); ++i) {
-        assert(vat(vec3,i) == 15);
-    }
-
-    vresize(vec4,15);
-
-    assert(vsize(vec4) == 15);
-
-    for (i = 0; i < vsize(vec4); ++i) {
-        assert(vat(vec4,i) == 0);
-    }
-
-    vassign_range(vec4,vbegin(vec3),vend(vec3));
-
-    assert(vsize(vec4) == 5);
-    
-    for (i = 0; i < vsize(vec4); ++i) {
-        assert(vat(vec4,i) == 15);
-    }
-
-    vassign_single(vec4,7,-5);
-
-    assert(vsize(vec4) == 7);
-
-    for (i = 0; i < vsize(vec4); ++i) {
-        assert(vat(vec4,i) == -5);
-    }
-
-    vector_destroy(vec4);
-    free(vec4);
-    vector_destroy(vec3);
-    free(vec3);
-
-    /* --------------------------------------------- */
-
-    vector *vec5 = (vector *)malloc(sizeof(vector));
-    vector_init(vec5);
-
-    for (i = 0; i < 15; ++i) {
-        vpush_back(vec5,i);
-    }
-
-    vresize(vec5, 10);
-    vresize(vec5, 15);
-
-    for (i = 10; i < 15; ++i) {
-        assert(vat(vec5,i) == 0);
-    }
-
-    vector_destroy(vec5);
-    free(vec5);
-
-    /* --------------------------------------------- */
-
-    vector *vec6 = (vector *)malloc(sizeof(vector));
-    vector_init(vec6);
-
-    reserve(vec6,50);
-
-    for (i = 0; i < 50; ++i) {
-        vpush_back(vec6, pow(i,2));
-    }
-
-    /* vec_iterator */ it = vbegin(vec6);
-
-    /* 0 1 4 9 16 25 36 49 64 81 100 ... */
-    vadvance(&it,6);
-
-    assert(vderef(it) == 36);
-
-    vadvance(&it,-3);
-
-    assert(vderef(it) == 9);
-
-    i = 0;
-    for (it = vbegin(vec6); it != vend(vec6); vadvance(&it,1)) {
-        assert(vderef(it) == pow(i++,2));
-    }
-
-    vector_destroy(vec6);
-    free(vec6);
-
-    /* --------------------------------------------- */
-
-    vector *vec7 = (vector *)malloc(sizeof(vector));
-    vector_init(vec7);
-
-    const size_t vec7_size = 15;
-    vresize(vec7,vec7_size);
-
-    for (i = 0; i < vec7_size; ++i) {
-        vset(vec7, i, i);
-    }
-
-    int *vec_data = data(vec7);
-
-    for (i = 0; i < vec7_size; ++i) {
-        assert(vec_data[i] == i);
-    }
-
-    i = 0;
-    for (it = vbegin(vec7); it != vend(vec7); vadvance(&it,1)) {
-        vset_it(it,pow(i++,2));
-    }
-
-    i = 0;
-    for (it = vbegin(vec7); it != vend(vec7); vadvance(&it,1)) {
-        assert(vderef(it) == pow(i++,2));
-    }
-
-    vector_destroy(vec7);
-    free(vec7);
-
-    /* --------------------------------------------- */
+    general_adding_and_deleting_elements_tests();
+    // general_changing_the_size_and_capacity_tests();
+    // general_access_to_elements_tests();
+    // general_changing_elements_tests();
 
     printf(GREEN "ALL TESTS WITH VECTOR PASSED SUCCESSFULLY" RED "\n");
-
     return EXIT_SUCCESS;
 }

@@ -1,4 +1,6 @@
-#include "../include/map.h"
+#include <map.h>
+#include <stdlib.h>
+#include <utility.h>
 
 void map_init(map *mp)
 {

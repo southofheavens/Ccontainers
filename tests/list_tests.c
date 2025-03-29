@@ -140,17 +140,17 @@ void changing_the_size_tests(void)
     assert(lempty(&lst));
 
     lresize(&lst, LIST_INIT_SIZE);
-    assert(lsize(&lst) == LIST_INIT_SIZE);
+    assert(lsize(&lst) == LIST_INIT_SIZE); 
 
     it = lbegin(&lst);
     for (i = 0; i < lsize(&lst); ++i)
     {
-        assert(lderef(it) == 0);
+        assert(lderef(it) == 0);    
         ladvance(&it,1);
     }
 
     lclear(&lst);
-    assert(lsize(&lst) == 0);
+    assert(lsize(&lst) == 0);   //
     assert(lempty(&lst));
 
     lpush_back(&lst,5);
@@ -247,7 +247,8 @@ void changing_elements_tests(void)
         ladvance(&it,1);
     }
 
-    int val = 6;
+    int val;
+    val = 6;
     size_t list_size;
     list_size = lsize(&lst);
     for (i = 0; i < list_size; ++i) {
@@ -276,7 +277,7 @@ void changing_elements_tests(void)
     }
     /* And now: 6 7 8 9 10 */
 
-    assert(lsize(&lst) == 5);
+    assert(lsize(&lst) == LIST_INIT_SIZE / 2);
     val = 6;
     it = lbegin(&lst);
     for (i = 0; i < lsize(&lst); ++i) 
@@ -301,7 +302,8 @@ void changing_elements_tests(void)
     }
 
     val = 5;
-    for (i = 0; i < LIST_INIT_SIZE / 2; ++i) {
+    list_size = lsize(&lst2);
+    for (i = 0; i < list_size; ++i) {
         lpush_front(&lst2, val--);
     }
     /* And now the lst2 looks like this: 1 2 3 4 5 6 7 8 9 10 */

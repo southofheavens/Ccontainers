@@ -1,13 +1,16 @@
-#include "../include/stack.h"
+#include <stack.h>
 #include <stdlib.h>
+#include <memory.h>
+#include <utility.h>
 
-void stack_init(stack *st)
+void stack_init(stack *st, const size_t elem_size)
 {
     check_null_pointers("stack_init: a null pointer was "
         "received as an argument", 1, st);
 
     st->size = 0;
     st->top = NULL;
+    st->elem_size = elem_size;
 }
 
 void stack_destroy(stack *st)
@@ -19,18 +22,24 @@ void stack_destroy(stack *st)
     while (curr != NULL)
     {
         snode *next = curr->next;
+        free(curr->elem);
         free(curr);
         curr = next;
     }
 }
 
-void spush(stack *st, int elem)
+void _spush(stack *st, const void *elem)
 {
     check_null_pointers("spush: a null pointer was "
-        "received as an argument", 1, st);
+        "received as an argument", 2, st, elem);
 
     snode *new_node = (snode *)malloc(sizeof(snode));
-    new_node->elem = elem;
+    check_null_pointers("bad alloc", 1, new_node);
+
+    new_node->elem = malloc(st->elem_size);
+    check_null_pointers("bad alloc", 1, new_node->elem);
+
+    memcpy(new_node->elem,elem,st->elem_size);
     new_node->next = st->top;
     st->top = new_node;
     st->size++;
@@ -48,11 +57,12 @@ void spop(stack *st)
         exit(EXIT_FAILURE);
     }
     st->top = del_node->next;
+    free(del_node->elem);
     free(del_node);
     st->size--;
 }
 
-int top(const stack *st)
+void *_top(const stack *st)
 {
     check_null_pointers("top: a null pointer was "
         "received as an argument", 1, st);

@@ -1,5 +1,5 @@
-#include "../include/utility.h"
-#include "../include/list.h"
+#include <utility.h>
+#include <list.h>
 #include <stdlib.h>
 
 void list_init(list *lst)

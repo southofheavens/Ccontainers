@@ -2,27 +2,25 @@
 #define VECTOR_H
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <memory.h>
-#include "utility.h"
-
-#define VEC_INIT_CAPACITY 8
+#include <utility.h>
 
 typedef struct
 {
-    int *elems;
+    void **elems;
     size_t capacity;
     size_t size;
+    size_t elem_size;
 } vector;
 
-typedef int * vec_iterator;
+typedef void ** vec_iterator;
 
 /* --------------------------------------------- */
 /*             Construct / destruct              */
 /* --------------------------------------------- */
 
 /* Initializes a vector */
-void vector_init(vector *);
+/* Takes as arguments a pointer to the vector and the size of the element */
+void vector_init(vector *, size_t);
 
 /* Cleans up resources */
 void vector_destroy(vector *);
@@ -32,10 +30,14 @@ void vector_destroy(vector *);
 /* --------------------------------------------- */
 
 /* Adds an element to the end of a vector */
-void vpush_back(vector *, int);
+#define vpush_back(vec,el) _vpush_back(vec,&(el))
+
+void _vpush_back(vector *, void *);
 
 /* Inserts an element into a vector before the iterator */
-void vinsert(vector *, const vec_iterator, int);
+#define vinsert(vec,it,el) _vinsert(vec,it,&(el))
+
+void _vinsert(vector *, const vec_iterator, void *);
 
 /* --------------------------------------------- */
 /*               Deleting elements               */
@@ -65,29 +67,41 @@ void reserve(vector *, size_t);
 /* --------------------------------------------- */
 
 /* Returns a value to a vector element at index */
-int vat(const vector *, size_t);
+#define vat(vec,ind,type) (*((type *)_vat(vec,ind)))
+
+void *_vat(const vector *, size_t);
 
 /* Returns the first element of the vector */
-int vfront(const vector *);
+#define vfront(vec,type) (*((type *)_vfront(vec)))
+
+void *_vfront(const vector *);
 
 /* Returns the last element of the vector */
-int vback(const vector *);
+#define vback(vec,type) (*((type *)_vback(vec)))
+
+void *_vback(const vector *);
 
 /* Returns a pointer to the first element of the vector */
-int *data(const vector *);
+void **data(const vector *);
 
 /* --------------------------------------------- */
 /*               Changing elements               */
 /* --------------------------------------------- */
 
 /* Changes the value of a vector at an index */
-void vset(vector *, size_t, int);
+#define vset(vec,ind,el) _vset(vec,ind,&(el))
+
+void _vset(vector *, size_t, void *);
 
 /* Replaces the value of the element pointed to by the iterator */
-void vset_it(vec_iterator, int);
+#define vset_it(it, el) _vset_it(it, &(el))
+
+void _vset_it(vector *, vec_iterator, void *);
 
 /* Replaces the contents of a vector with arg3, repeating it arg2 times */
-void vassign_single(vector *, size_t, int);
+#define vassign_single(vec,count,el) _vassign_single(vec,count,&(el))
+
+void _vassign_single(vector *, size_t, void *);
 
 /* Replaces the contents of a vector with elements from a half-open range ("[a,b)") specified by iterators */
 void vassign_range(vector *, const vec_iterator, const vec_iterator);
@@ -109,7 +123,9 @@ vec_iterator vend(const vector *);
 void vadvance(vec_iterator *, int);
 
 /* Returns the value of the element pointed to by the iterator (dereference iterator) */
-int vderef(vec_iterator);
+#define vderef(it, type) *((type *)_vderef(it))
+
+void *_vderef(vec_iterator);
 
 /* --------------------------------------------- */
 /*              Vector information               */
@@ -131,8 +147,10 @@ unsigned vempty(const vector *);
 /* Sorts a vector */
 void vsort(vector *, int (*)(const void *, const void *));
 
-/* Searches for an element in a vector and returns an iterator pointing to the element */
-vec_iterator vfind(const vector *, int);
+/* Takes as arguments a pointer to a vector, an element, an element type, and a comparator */
+#define vfind(vec,el,comp) _vfind(vec, &(el), comp)
+
+vec_iterator _vfind(const vector *, void *, int (*)(const void*, const void*));
 
 /* --------------------------------------------- */
 /*              Auxiliary functions              */

@@ -1,5 +1,6 @@
-#include "../include/queue.h"
+#include <queue.h>
 #include <stdlib.h>
+#include <utility.h>
 
 void queue_init(queue *qu)
 {
@@ -33,6 +34,8 @@ void qpush(queue *qu, int elem)
     if (qu->size == 0)
     {
         qu->head = qu->tail = (qnode *)malloc(sizeof(qnode));
+        check_null_pointers("bad alloc", 1, qu->head);
+    
         qu->tail->elem = elem;
         qu->tail->prev = NULL;
         qu->tail->next = NULL;
@@ -40,6 +43,8 @@ void qpush(queue *qu, int elem)
     else
     {
         qnode *new_tail = (qnode *)malloc(sizeof(qnode));
+        check_null_pointers("bad alloc", 1, new_tail);
+
         new_tail->elem = elem;
         new_tail->prev = NULL;
         new_tail->next = qu->tail;

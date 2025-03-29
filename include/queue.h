@@ -2,7 +2,6 @@
 #define QUEUE_H
 
 #include <stdio.h>
-#include "utility.h"
 
 typedef struct qnode qnode;
 

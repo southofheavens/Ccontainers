@@ -2,13 +2,12 @@
 #define STACK_H
 
 #include <stdio.h>
-#include "utility.h"
 
 typedef struct snode snode;
 
 struct snode
 {
-    int elem;
+    void *elem;
     snode *next;
 };
 
@@ -16,6 +15,7 @@ typedef struct
 {
     snode *top;
     size_t size;
+    size_t elem_size;
 } stack;
 
 /* --------------------------------------------- */
@@ -23,7 +23,8 @@ typedef struct
 /* --------------------------------------------- */
 
 /* Initializes a stack */
-void stack_init(stack *);
+/* Takes as arguments a pointer to the stack and the size of the element */
+void stack_init(stack *, const size_t);
 
 /* Cleans up resources */
 void stack_destroy(stack *);
@@ -32,14 +33,17 @@ void stack_destroy(stack *);
 /*                Adding elements                */
 /* --------------------------------------------- */
 
-/* Adds an element to the stack */
-void spush(stack *, int);
+/* Adds an element to the stack. To push an item onto the stack, */
+/* it must be an lvalue (have an address) */
+#define spush(st,el) _spush(st,&(el))
+
+void _spush(stack *, const void *);
 
 /* --------------------------------------------- */
 /*               Deleting elements               */
 /* --------------------------------------------- */
 
-/* Removes an element from the stack */
+/* Removes an element from top of the stack */
 void spop(stack *);
 
 /* --------------------------------------------- */
@@ -47,7 +51,10 @@ void spop(stack *);
 /* --------------------------------------------- */
 
 /* Returns the element from the top of the stack */
-int top(const stack *);
+/* takes as arguments a pointer to the stack and an element type */
+#define top(st,type) (*((type *)_top(st)))
+
+void *_top(const stack *);
 
 /* --------------------------------------------- */
 /*               Changing elements               */
