@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <stdbool.h>
+#include <utility.h>
 
 #define VEC_INIT_CAPACITY 8
 
-void vector_init(vector *vec, size_t elem_size)
+void vector_init(vector *vec, const size_t elem_size)
 {
     check_null_pointers("vector_init: a null pointer was "
         "received as an argument", 1, vec);
@@ -31,10 +32,10 @@ void vector_destroy(vector *vec)
     }
 }
 
-void _vpush_back(vector *vec, void *elem)
+void _vpush_back(vector *vec, const void *elem)
 {
     check_null_pointers("vpush_back: a null pointer was "
-        "received as an argument", 1, vec);
+        "received as an argument", 2, vec, elem);
 
     if (!(vec->elems))
     {
@@ -64,12 +65,13 @@ void _vpush_back(vector *vec, void *elem)
     }
 }
 
-void _vinsert(vector *vec, const vec_iterator it, void *elem)
+void _vinsert(vector *vec, const vec_iterator it, const void *elem)
 {
     check_null_pointers("vinsert: a null pointer was " 
-        "received as an argument", 1, vec);
+        "received as an argument", 2, vec, elem);
 
-    if (it && (it < vbegin(vec) || it > vend(vec)))
+    /* vec->elems is begin iterator, vec->elems+vec->size is end iterator */
+    if (it && (it < vec->elems || it > vec->elems+vec->size))
     {
         fprintf(stderr, "vinsert: invalid iterator");
         exit(EXIT_FAILURE);
@@ -121,7 +123,8 @@ void verase(vector *vec, vec_iterator it)
     check_null_pointers("verase: a null pointer was " 
         "received as an argument", 2, vec, it);
 
-    if (it < vbegin(vec) || it >= vend(vec))
+    /* vec->elems is begin iterator, vec->elems+vec->size is end iterator */    
+    if (it < vec->elems || it >= vec->elems+vec->size)
     {
         fprintf(stderr, "verase: invalid iterator");
         exit(EXIT_FAILURE);
@@ -134,10 +137,10 @@ void verase(vector *vec, vec_iterator it)
     vec->size--;
 }
 
-void vresize(vector *vec, size_t new_size)
+void _vresize(vector *vec, const size_t new_size, const void *default_value)
 {
     check_null_pointers("vresize: a null pointer was " 
-        "received as an argument", 1, vec);
+        "received as an argument", 2, vec, default_value);
 
     if (new_size > vec->capacity)
     {
@@ -145,8 +148,10 @@ void vresize(vector *vec, size_t new_size)
         vrealloc(vec, vec->capacity);
     }
     size_t i;
-    for (i = vec->size; i < new_size; ++i) {
-        vec->elems[i] = NULL;
+    for (i = vec->size; i < new_size; ++i) 
+    {
+        vec->elems[i] = malloc(vec->elem_size);
+        memcpy(vec->elems[i],default_value,vec->elem_size); 
     }
     vec->size = new_size;
 }
@@ -159,7 +164,7 @@ void vclear(vector *vec)
     vec->size = 0;
 }
 
-void reserve(vector *vec, size_t new_capacity)
+void reserve(vector *vec, const size_t new_capacity)
 {
     check_null_pointers("reserve: a null pointer was "
         "received as an argument", 1, vec);
@@ -171,7 +176,7 @@ void reserve(vector *vec, size_t new_capacity)
     }
 }
 
-void *_vat(const vector *vec, size_t index)
+void *_vat(const vector *vec, const size_t index)
 {
     check_null_pointers("vat: a null pointer was " 
         "received as an argument", 1, vec);
@@ -213,18 +218,10 @@ void *_vback(const vector *vec)
     return vec->elems[vec->size - 1];
 }
 
-void **data(const vector *vec)
-{
-    check_null_pointers("data: a null pointer was "
-        "received as an argument", 1, vec);
-
-    return vec->elems;
-}
-
-void _vset(vector *vec, size_t index, void *elem)
+void _vset(vector *vec, const size_t index, const void *elem)
 {
     check_null_pointers("vset: a null pointer was " 
-        "received as an argument", 1, vec);
+        "received as an argument", 2, vec, elem);
 
     if (!(vec->elems) || index >= vec->size)
     {
@@ -235,35 +232,35 @@ void _vset(vector *vec, size_t index, void *elem)
     memcpy(vec->elems[index], elem, vec->elem_size);
 }
 
-void _vset_it(vector *vec, vec_iterator it, void *val)
+void _vset_it(vector *vec, vec_iterator it, const void *val)
 {
     check_null_pointers("vset_it: a null pointer was "
-        "received as an argument", 1, it);
+        "received as an argument", 3, vec, it, val);
     
     memcpy(*it, val, vec->elem_size);
 }
 
-void _vassign_single(vector *vec, size_t count, void *elem)
+void _vassign_single(vector *vec, const size_t count, const void *elem)
 {
     check_null_pointers("vassign_single: a null pointer was "
-        "received as an argument", 1, vec);
+        "received as an argument", 2, vec, elem);
     
     size_t i, vec_size;
     if (count >= vec->size)
     {
         reserve(vec, count);
         for (i = 0; i < vsize(vec); ++i) {
-            vset(vec,i,elem);
+            memcpy(vec->elems[i], elem, vec->elem_size);
         }
         for (i = 0, vec_size = vec->size; i < count - vec_size; ++i) {
-            vpush_back(vec, elem);
+            _vpush_back(vec, elem);
         }
     }
     else
     {
-        vresize(vec, count);
+        vec->size = count;
         for (i = 0; i < count; ++i) {
-            vset(vec,i,elem);
+            memcpy(vec->elems[i], elem, vec->elem_size);
         }
     }
 }
@@ -276,9 +273,9 @@ void vassign_range(vector *vec, const vec_iterator begin, const vec_iterator end
     /* vit is a begin iterator for the vector to be filled */
     /* b is a copy of the begin iterator from the half-open range */
     /* the copy is needed because the iterator from the arguments is */
-    /* constant and we cannot apply ladvance to it */
+    /* constant and we cannot apply vadvance to it */
     vec_iterator vit, b; 
-    vit = vbegin(vec);
+    vit = vec->elems; /* begin iterator */
     b = begin;
 
     /* Number of elements in a half-open range begin-end */
@@ -288,29 +285,22 @@ void vassign_range(vector *vec, const vec_iterator begin, const vec_iterator end
 
     while (b != end)
     {
-        if (vit == vend(vec) || vector_is_over) 
+        if (vit == (vec->elems+vec->size) || vector_is_over) 
         {
             vector_is_over = true;
-            _vpush_back(vec,*b);
+            _vpush_back(vec,*b); /* походу тут есть проблемка */
         }
         else {
-            _vset_it(vec,vit,*b);
+            memcpy(*vit, *b, vec->elem_size); 
         }
-        if (vit != vend(vec) || !vector_is_over) {
-            vadvance(&vit,1);
+        if (vit != vec->elems+vec->size || !vector_is_over) {
+            vit += 1; /* vadvance */
         }
-        vadvance(&b,1);
+        b += 1; /* vadvance */
         elems_count++;
     }
-    if (vsize(vec) > elems_count)
-    {
-        size_t i, vs;
-        i = 0;
-        vs = vsize(vec);
-
-        for (i = 0; i < vs - elems_count; ++i) {
-            vpop_back(vec);
-        }
+    if (vec->size > elems_count) {
+        vec->size = elems_count;
     }
 }
 
@@ -340,7 +330,7 @@ vec_iterator vend(const vector *vec)
     return vec->elems + vec->size;
 }
 
-void vadvance(vec_iterator *it, int count)
+void vadvance(vec_iterator *it, const int count)
 {
     check_null_pointers("vadvance: a null pointer was " 
         "received as an argument", 1, it);
@@ -348,7 +338,7 @@ void vadvance(vec_iterator *it, int count)
     (*it) = (*it) + count;
 }
 
-void *_vderef(vec_iterator it)
+void *_vderef(const vec_iterator it)
 {
     check_null_pointers("vderef: a null pointer was "
         "received as an agrument", 1, it);
@@ -386,32 +376,29 @@ void vsort(vector *vec, int (*comp)(const void *, const void *))
         "received as an argument", 2, vec, comp);
 
     if (vec->elems) {
-        qsort(vec->elems,vec->size,sizeof(int),comp);
+        qsort(vec->elems,vec->size,sizeof(void *),comp);
     }
 }
 
-vec_iterator _vfind(const vector *vec, void *elem, 
+vec_iterator _vfind(const vector *vec, const void *elem, 
     int (*comp)(const void *, const void *))
 {
     check_null_pointers("vfind: a null pointer was "
-        "received as an argument", 1, vec);
+        "received as an argument", 3, vec, elem, comp);
 
     vec_iterator it;
-    for (it = vbegin(vec); it != vend(vec); vadvance(&it,1))
+    for (it = vec->elems; it != vec->elems+vec->size; it+=1)
     {
-        if (comp(*it,elem) == 0) {
+        if (comp(*it,elem)) {
             return it;
         }
     }
     return it;
 }
 
-static void vrealloc(vector *vec, size_t new_capacity)
+static void vrealloc(vector *vec, const size_t new_capacity)
 {
-    check_null_pointers("vrealloc: a null pointer was "
-        "received as an argument", 1, vec);
-    
     vec->capacity = new_capacity;
-    vec->elems = realloc(vec->elems, vec->elem_size * vec->capacity);
+    vec->elems = realloc(vec->elems, sizeof(void *) * vec->capacity);
     check_null_pointers("bad alloc", 1, vec->elems);
 }

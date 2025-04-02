@@ -53,7 +53,6 @@ void spop(stack *);
 /* Returns the element from the top of the stack */
 /* takes as arguments a pointer to the stack and an element type */
 #define top(st,type) (*((type *)_top(st)))
-
 void *_top(const stack *);
 
 /* --------------------------------------------- */
