@@ -1,8 +1,9 @@
 #include <utility.h>
 #include <list.h>
 #include <stdlib.h>
+#include <memory.h>
 
-void list_init(list *lst)
+void list_init(list *lst, size_t type_size)
 {
     check_null_pointers("list_init: a null pointer was "
         "received as an argument", 1, lst);
@@ -14,6 +15,7 @@ void list_init(list *lst)
     lst->end->prev = NULL;
     lst->end->next = NULL;
     lst->size = 0;
+    lst->type_size = type_size;
 }
 
 void list_destroy(list *lst)
@@ -25,48 +27,55 @@ void list_destroy(list *lst)
     while (lst->head)
     {
         next = lst->head->next;
+        free(lst->head->elem);
         free(lst->head);
         lst->head = next;
     }
 }
 
-void lpush_back(list *lst, const int elem)
+void _lpush_back(list *lst, const void *elem)
 {
     check_null_pointers("lpush_back: a null pointer was "
-        "received as an argument", 1, lst);
+        "received as an argument", 2, lst, elem);
 
     if (lst->size == 0)
     {
         lst->head = (lnode *)malloc(sizeof(lnode));
         check_null_pointers("bad alloc", 1, lst->head);
 
-        lst->head->elem = elem;
+        lst->head->elem = malloc(lst->type_size);
+        check_null_pointers("bad alloc", 1, lst->head->elem);
+
+        memcpy(lst->head->elem, elem, lst->type_size);
         lst->head->prev = NULL;
         lst->head->next = lst->end;
         lst->end->prev = lst->head;
     }
     else
     {
-        lnode *new_elem = (lnode *)malloc(sizeof(lnode));
-        check_null_pointers("bad alloc", 1, new_elem);
+        lnode *new_node = (lnode *)malloc(sizeof(lnode));
+        check_null_pointers("bad alloc", 1, new_node);
 
-        new_elem->elem = elem;
-        new_elem->prev = lst->end->prev;
-        new_elem->next = lst->end;
-        lst->end->prev->next = new_elem;
-        lst->end->prev = new_elem;
+        new_node->elem = malloc(lst->type_size);
+        check_null_pointers("bad alloc", 1, new_node->elem);
+
+        memcpy(new_node->elem, elem, lst->type_size);
+        new_node->prev = lst->end->prev;
+        new_node->next = lst->end;
+        lst->end->prev->next = new_node;
+        lst->end->prev = new_node;
     }
     lst->size++;
 }
 
-void lpush_front(list *lst, const int elem)
+void _lpush_front(list *lst, const void *elem)
 {
     check_null_pointers("lpush_front: a null pointer was "
-        "received as an argument", 1, lst);
+        "received as an argument", 2, lst, elem);
 
     if (lst->size == 0)
     {
-        lpush_back(lst,elem);
+        _lpush_back(lst,elem);
         return;
     }
     else
@@ -74,7 +83,10 @@ void lpush_front(list *lst, const int elem)
         lnode *new_head = (lnode *)malloc(sizeof(lnode));
         check_null_pointers("bad alloc", 1, new_head);
 
-        new_head->elem = elem;
+        new_head->elem = malloc(lst->type_size);
+        check_null_pointers("bad alloc", 1, new_head->elem);
+
+        memcpy(new_head->elem, elem, lst->type_size);
         new_head->prev = NULL;
         new_head->next = lst->head;
         lst->head->prev = new_head;
@@ -83,27 +95,30 @@ void lpush_front(list *lst, const int elem)
     lst->size++;
 }
 
-void linsert(list *lst, const list_iterator it, const int elem)
+void _linsert(list *lst, const list_iterator it, const void *elem)
 {
     check_null_pointers("linsert: a null pointer was "
-        "received as an argument", 2, lst, it);
+        "received as an argument", 3, lst, it, elem);
 
     if (it == lst->head) {
-        lpush_front(lst,elem);
+        _lpush_front(lst,elem);
     }
     else if (it == lst->end) {
-        lpush_back(lst,elem);
+        _lpush_back(lst,elem);
     }
     else
     {
-        lnode *new_elem = (lnode *)malloc(sizeof(lnode));
-        check_null_pointers("bad alloc", 1, new_elem);
+        lnode *new_node = (lnode *)malloc(sizeof(lnode));
+        check_null_pointers("bad alloc", 1, new_node);
 
-        new_elem->elem = elem;
-        new_elem->prev = it->prev;
-        new_elem->next = it;
-        it->prev->next = new_elem;
-        it->prev = new_elem;
+        new_node->elem = malloc(lst->type_size);
+        check_null_pointers("bad alloc", 1, new_node->elem);
+
+        memcpy(new_node->elem, elem, lst->type_size);
+        new_node->prev = it->prev;
+        new_node->next = it;
+        it->prev->next = new_node;
+        it->prev = new_node;
         lst->size++;
     }
 }
@@ -119,6 +134,7 @@ void lpop_back(list *lst)
         exit(EXIT_FAILURE);
     }
     lnode *del_prev = lst->end->prev->prev; 
+    free(lst->end->prev->elem);
     free(lst->end->prev);
     if (del_prev)
     {
@@ -144,6 +160,7 @@ void lpop_front(list *lst)
         exit(EXIT_FAILURE);
     }
     lnode *del_next = lst->head->next;
+    free(lst->head->elem);
     free(lst->head);
     if (del_next != lst->end)
     {
@@ -174,12 +191,13 @@ void lerase(list *lst, list_iterator it)
         lnode *del_prev = it->prev;
         del_prev->next = it->next;
         it->next->prev = del_prev;
+        free(it->elem);
         free(it);
         lst->size--;
     }
 }
 
-void lresize(list *lst, const size_t new_size)
+void _lresize(list *lst, const size_t new_size, const void* default_value)
 {
     check_null_pointers("lresize: a null pointer was "
         "received as an argument", 1, lst);
@@ -190,15 +208,24 @@ void lresize(list *lst, const size_t new_size)
     if (new_size > old_size) 
     {
         for (i = 0; i < new_size - old_size; ++i) {
-            lpush_back(lst,0);
+            _lpush_back(lst,default_value);
         }
     }
     else if (new_size < old_size)
     {
         size_t i;
-        for (i = 0; i < old_size - new_size; ++i) {
-            lpop_back(lst);
+        lnode *prev_node, *curr_node;
+        curr_node = lst->end->prev;
+        for (i = 0; i < old_size - new_size; ++i) 
+        {
+            prev_node = curr_node->prev;
+            free(curr_node->elem);
+            free(curr_node);
+            curr_node = prev_node;
         }
+        curr_node->next = lst->end;
+        lst->end->prev = curr_node;
+        lst->size = new_size;
     }
 }
 
@@ -215,6 +242,7 @@ void lclear(list *lst)
         while (lst->head)
         {
             next = lst->head->next;
+            free(lst->head->elem);
             free(lst->head);
             lst->head = next;
         }
@@ -223,69 +251,80 @@ void lclear(list *lst)
     }
 }
 
-int lfront(list *lst)
+void *_lfront(const list *lst)
 {
     check_null_pointers("lfront: a null pointer was " 
         "received as an argument", 1, lst);
 
-    if (lempty(lst)) 
+    if (lst->head == lst->end) 
     {
         fprintf(stderr, "lfront: list is empty");
         exit(EXIT_FAILURE);
     }
 
-    return lderef(lbegin(lst));
+    return lst->head->elem;
 }
 
-int lback(list *lst)
+void *_lback(const list *lst)
 {
     check_null_pointers("lback: a null pointer was " 
         "received as an argument", 1, lst);
 
-    if (lempty(lst)) 
+    if (lst->head == lst->end) 
     {
         fprintf(stderr, "lback: list is empty");
         exit(EXIT_FAILURE);
     }
 
-    list_iterator it = lend(lst);
-    ladvance(&it,-1);
-
-    return lderef(it);
+    return lst->end->prev->elem;
 }
 
-void lset(list_iterator it, const int new_val)
+void _lset(list *lst, list_iterator it, const void *new_val)
 {
     check_null_pointers("lset: a null pointer was "
-        "received as an argument", 1, it);
+        "received as an argument", 3, lst, it, new_val);
 
-    it->elem = new_val;
+    memcpy(it->elem, new_val, lst->type_size);
 }
 
-void lassign_single(list *lst, const size_t count, const int elem)
+void _lassign_single(list *lst, const size_t count, const void *var)
 {
     check_null_pointers("lassign_single: a null pointer was "
-        "received as an argument", 1, lst);
+        "received as an argument", 2, lst, var);
     
     size_t i, list_size;
     list_iterator it;
 
     if (count >= lst->size)
     {
-        for (it = lbegin(lst); it != lend(lst); ladvance(&it,1)) {
-            lset(it, elem);
+        for (it = lst->head; it != lst->end; it = it->next) {
+            memcpy(it->elem, var, lst->type_size);
         }
-        for (i = 0, list_size = lsize(lst); i < count - list_size; ++i) {
-            lpush_back(lst,elem);
+        for (i = 0, list_size = lst->size; i < count - list_size; ++i) {
+            _lpush_back(lst, var);
         }
     }
     else
     {
-        for (i = 0, list_size = lsize(lst); i < list_size - count; ++i) {
-            lpop_back(lst);
+        lnode *prev_node, *curr_node;
+        curr_node = lst->end->prev;
+        for (i = 0, list_size = lst->size; i < list_size - count; ++i) 
+        {
+            prev_node = curr_node->prev;
+            free(curr_node->elem);
+            free(curr_node);
+            curr_node = prev_node;
         }
-        for (it = lbegin(lst); it != lend(lst); ladvance(&it,1)) {
-            lset(it, elem);
+        if (count != 0) {
+            curr_node->next = lst->end;
+        }
+        else {
+            lst->head = lst->end;
+        }
+        lst->end->prev = curr_node;
+        lst->size = count;
+        for (it = lst->head; it != lst->end; it = it->next) {
+            memcpy(it->elem, var, lst->type_size);
         }
     }
 }
@@ -300,7 +339,7 @@ void lassign_range(list *lst, const list_iterator begin, const list_iterator end
     /* the copy is needed because the iterator from the arguments is */
     /* constant and we cannot apply ladvance to it */
     list_iterator lit, b; 
-    lit = lbegin(lst);
+    lit = lst->head;
     b = begin;
 
     /* Number of elements in a half-open range begin-end */
@@ -309,27 +348,41 @@ void lassign_range(list *lst, const list_iterator begin, const list_iterator end
 
     while (b != end)
     {
-        if (lit == lend(lst)) {
-            lpush_back(lst,lderef(b));
+        if (lit == lst->end) {
+            _lpush_back(lst,b->elem);
         }
         else {
-            lset(lit,lderef(b));
+            memcpy(lit->elem, b->elem, lst->type_size);
         }
-        if (lit != lend(lst)) {
-            ladvance(&lit,1);
+        if (lit != lst->end) {
+            lit = lit->next;
         }
-        ladvance(&b,1);
+        b = b->next;
         elems_count++;
     }
-    if (lsize(lst) > elems_count)
+    if (lst->size > elems_count)
     {
         size_t i, ls;
         i = 0;
-        ls = lsize(lst);
+        ls = lst->size;
 
-        for (i = 0; i < ls - elems_count; ++i) {
-            lpop_back(lst);
+        lnode *prev_node, *curr_node;
+        curr_node = lst->end->prev;
+        for (i = 0; i < ls - elems_count; ++i) 
+        {
+            prev_node = curr_node->prev;
+            free(curr_node->elem);
+            free(curr_node);
+            curr_node = prev_node;
         }
+        if (elems_count != 0) {
+            curr_node->next = lst->end;
+        }
+        else {
+            lst->head = lst->end;
+        }
+        lst->end->prev = curr_node;
+        lst->size = elems_count;
     }
 }
 
@@ -379,7 +432,7 @@ void ladvance(list_iterator *it, const int count)
     }
 }
 
-int lderef(const list_iterator it)
+void *_lderef(const list_iterator it)
 {
     check_null_pointers("lderef: a null pointer was "
         "received as an argument", 1, it);
@@ -403,7 +456,7 @@ unsigned lempty(const list *lst)
     return (lst->head == lst->end);
 }
 
-void lsort(list *lst, const int (*comp)(const void *f, const void *s))
+void lsort(list *lst, int (*comp)(const void *f, const void *s))
 {
     check_null_pointers("lsort: a null pointer was "
         "received as an argument", 2, lst, comp);
@@ -426,22 +479,23 @@ void lsort(list *lst, const int (*comp)(const void *f, const void *s))
     lst->head->prev = NULL;
 }
 
-list_iterator lfind(const list *lst, const int elem)
+list_iterator _lfind(const list *lst, const void *elem, 
+    int (*comp)(const void *, const void *))
 {
     check_null_pointers("lfind: a null pointer was "
-        "received as an argument", 1, lst);
+        "received as an argument", 2, lst, elem);
     
     list_iterator it;
-    for (it = lbegin(lst); it != lend(lst); ladvance(&it,1)) 
+    for (it = lst->head; it != lst->end; it = it->next) 
     {
-        if (lderef(it) == elem) {
+        if (comp(it->elem,elem) == 1) {
             return it;
         }
     }
     return it;
 }
 
-static lnode *merge_sort(lnode *head, const int (*comp)(const void *f, const void *s))
+static lnode *merge_sort(lnode *head, int (*comp)(const void *f, const void *s))
 {
     lnode *first_half_end = get_middle(head);
 
@@ -462,7 +516,7 @@ static lnode *merge_sort(lnode *head, const int (*comp)(const void *f, const voi
 }
 
 static lnode *merge(lnode *first_head, lnode *second_head, 
-    const int (*comp)(const void *f, const void *s))
+    int (*comp)(const void *f, const void *s))
 {
     lnode *head, *prev, *curr;
     head = NULL;
@@ -472,7 +526,7 @@ static lnode *merge(lnode *first_head, lnode *second_head,
         {
             if (second_head)
             {
-                if (comp(&(first_head->elem),&(second_head->elem)) <= 0)
+                if (comp(first_head->elem,second_head->elem) <= 0)
                 {
                     curr = first_head;
                     first_head = first_head->next;

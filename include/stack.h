@@ -27,6 +27,7 @@ typedef struct
 void stack_init(stack *, const size_t);
 
 /* Cleans up resources */
+/* Takes a stack pointer as an argument */
 void stack_destroy(stack *);
 
 /* --------------------------------------------- */
@@ -36,7 +37,6 @@ void stack_destroy(stack *);
 /* Adds an element to the stack. To push an item onto the stack, */
 /* it must be an lvalue (have an address) */
 #define spush(st,el) _spush(st,&(el))
-
 void _spush(stack *, const void *);
 
 /* --------------------------------------------- */

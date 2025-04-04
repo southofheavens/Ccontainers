@@ -6,7 +6,7 @@
 
 #define VEC_INIT_CAPACITY 8
 
-void vector_init(vector *vec, const size_t elem_size)
+void vector_init(vector *vec, const size_t type_size)
 {
     check_null_pointers("vector_init: a null pointer was "
         "received as an argument", 1, vec);
@@ -14,7 +14,7 @@ void vector_init(vector *vec, const size_t elem_size)
     vec->elems = NULL;
     vec->capacity = 0;
     vec->size = 0;
-    vec->elem_size = elem_size;
+    vec->type_size = type_size;
 }
 
 void vector_destroy(vector *vec)
@@ -43,10 +43,10 @@ void _vpush_back(vector *vec, const void *elem)
         vec->elems = malloc(vec->capacity * sizeof(void *));
         check_null_pointers("bad alloc", 1, vec->elems);
 
-        vec->elems[vec->size] = malloc(vec->elem_size);
+        vec->elems[vec->size] = malloc(vec->type_size);
         check_null_pointers("bad alloc", 1, vec->elems[vec->size]);
 
-        memcpy(vec->elems[vec->size], elem, vec->elem_size);
+        memcpy(vec->elems[vec->size], elem, vec->type_size);
         vec->size += 1;
     }
     else
@@ -57,10 +57,10 @@ void _vpush_back(vector *vec, const void *elem)
             vrealloc(vec, vec->capacity);
         }
 
-        vec->elems[vec->size] = malloc(vec->elem_size);
+        vec->elems[vec->size] = malloc(vec->type_size);
         check_null_pointers("bad alloc", 1, vec->elems[vec->size]);
 
-        memcpy(vec->elems[vec->size], elem, vec->elem_size);
+        memcpy(vec->elems[vec->size], elem, vec->type_size);
         vec->size += 1;
     }
 }
@@ -76,7 +76,7 @@ void _vinsert(vector *vec, const vec_iterator it, const void *elem)
         fprintf(stderr, "vinsert: invalid iterator");
         exit(EXIT_FAILURE);
     }
-    if (it == NULL || it == vend(vec))
+    if (it == NULL || it == vec->elems+vec->size)
     {
         _vpush_back(vec, elem);
         return;
@@ -96,10 +96,10 @@ void _vinsert(vector *vec, const vec_iterator it, const void *elem)
         vec->elems[i] = vec->elems[i-1];
     }
 
-    *it_copy = malloc(vec->elem_size);
+    *it_copy = malloc(vec->type_size);
     check_null_pointers("bad alloc", 1, *it_copy);
 
-    memcpy(*it_copy, elem, vec->elem_size);
+    memcpy(*it_copy, elem, vec->type_size);
     vec->size++;
 }
 
@@ -150,8 +150,8 @@ void _vresize(vector *vec, const size_t new_size, const void *default_value)
     size_t i;
     for (i = vec->size; i < new_size; ++i) 
     {
-        vec->elems[i] = malloc(vec->elem_size);
-        memcpy(vec->elems[i],default_value,vec->elem_size); 
+        vec->elems[i] = malloc(vec->type_size);
+        memcpy(vec->elems[i],default_value,vec->type_size); 
     }
     vec->size = new_size;
 }
@@ -218,10 +218,10 @@ void *_vback(const vector *vec)
     return vec->elems[vec->size - 1];
 }
 
-void _vset(vector *vec, const size_t index, const void *elem)
+void _vset(vector *vec, const size_t index, const void *val)
 {
     check_null_pointers("vset: a null pointer was " 
-        "received as an argument", 2, vec, elem);
+        "received as an argument", 2, vec, val);
 
     if (!(vec->elems) || index >= vec->size)
     {
@@ -229,7 +229,7 @@ void _vset(vector *vec, const size_t index, const void *elem)
         exit(EXIT_FAILURE);
     }
 
-    memcpy(vec->elems[index], elem, vec->elem_size);
+    memcpy(vec->elems[index], val, vec->type_size);
 }
 
 void _vset_it(vector *vec, vec_iterator it, const void *val)
@@ -237,30 +237,30 @@ void _vset_it(vector *vec, vec_iterator it, const void *val)
     check_null_pointers("vset_it: a null pointer was "
         "received as an argument", 3, vec, it, val);
     
-    memcpy(*it, val, vec->elem_size);
+    memcpy(*it, val, vec->type_size);
 }
 
-void _vassign_single(vector *vec, const size_t count, const void *elem)
+void _vassign_single(vector *vec, const size_t count, const void *val)
 {
     check_null_pointers("vassign_single: a null pointer was "
-        "received as an argument", 2, vec, elem);
+        "received as an argument", 2, vec, val);
     
     size_t i, vec_size;
     if (count >= vec->size)
     {
         reserve(vec, count);
-        for (i = 0; i < vsize(vec); ++i) {
-            memcpy(vec->elems[i], elem, vec->elem_size);
+        for (i = 0; i < vec->size; ++i) {
+            memcpy(vec->elems[i], val, vec->type_size);
         }
         for (i = 0, vec_size = vec->size; i < count - vec_size; ++i) {
-            _vpush_back(vec, elem);
+            _vpush_back(vec, val);
         }
     }
     else
     {
         vec->size = count;
         for (i = 0; i < count; ++i) {
-            memcpy(vec->elems[i], elem, vec->elem_size);
+            memcpy(vec->elems[i], val, vec->type_size);
         }
     }
 }
@@ -288,10 +288,10 @@ void vassign_range(vector *vec, const vec_iterator begin, const vec_iterator end
         if (vit == (vec->elems+vec->size) || vector_is_over) 
         {
             vector_is_over = true;
-            _vpush_back(vec,*b); /* походу тут есть проблемка */
+            _vpush_back(vec,*b); 
         }
         else {
-            memcpy(*vit, *b, vec->elem_size); 
+            memcpy(*vit, *b, vec->type_size); 
         }
         if (vit != vec->elems+vec->size || !vector_is_over) {
             vit += 1; /* vadvance */

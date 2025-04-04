@@ -564,6 +564,59 @@ void general_changing_elements_tests(void)
 
 /* --------------------------------------------------------------------------- */
 
+#define ASSIGN_INIT_SIZE_1 100
+#define ASSIGN_INIT_SIZE_2 1000
+#define ASSIGN_INIT_SIZE_3 10000
+
+void general_vassign_tests(void)
+{
+    vector vec1;
+    vector_init(&vec1,sizeof(int));
+
+    int assign_elem;
+    assign_elem = 5;
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_2, assign_elem);
+    assert(vsize(&vec1) == ASSIGN_INIT_SIZE_2);
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_1, assign_elem);
+    assert(vsize(&vec1) == ASSIGN_INIT_SIZE_1);
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_3, assign_elem);
+    assert(vsize(&vec1) == ASSIGN_INIT_SIZE_3);
+
+    vassign_single(&vec1, 0, assign_elem);
+    assert(vempty(&vec1));
+
+    vector vec2;
+    vector_init(&vec2,sizeof(int));
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_2, assign_elem);
+    vassign_range(&vec2, vbegin(&vec1), vend(&vec1));
+    assert(vsize(&vec2) == ASSIGN_INIT_SIZE_2);
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_1, assign_elem);
+    vassign_range(&vec2, vbegin(&vec1), vend(&vec1));
+    assert(vsize(&vec2) == ASSIGN_INIT_SIZE_1);
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_3, assign_elem);
+    vassign_range(&vec2, vbegin(&vec1), vend(&vec1));
+    assert(vsize(&vec2) == ASSIGN_INIT_SIZE_3);
+
+    vassign_single(&vec1, 0, assign_elem);
+    vassign_range(&vec2, vbegin(&vec1), vend(&vec1));
+    assert(vempty(&vec2));
+
+    vassign_single(&vec1, ASSIGN_INIT_SIZE_3, assign_elem);
+    vassign_range(&vec2, vbegin(&vec1), vend(&vec1));
+    assert(vsize(&vec2) == ASSIGN_INIT_SIZE_3);
+
+    vector_destroy(&vec2);
+    vector_destroy(&vec1);
+}
+
+/* --------------------------------------------------------------------------- */
+
 #define SOME_WORDS_ARRAY_LENGTH      15
 #define LEXICOGRAPHICALLY_FIRST_WORD "Apple"
 #define LEXICOGRAPHICALLY_LAST_WORD  "Zombie"
@@ -705,6 +758,7 @@ int main(void)
     general_changing_the_size_and_capacity_tests();
     general_access_to_elements_tests();
     general_changing_elements_tests();
+    general_vassign_tests();
     string_vector_tests();
     vec_vector_tests();
 

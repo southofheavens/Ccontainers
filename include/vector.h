@@ -8,10 +8,10 @@ typedef struct
     void **elems;
     size_t capacity;
     size_t size;
-    size_t elem_size;
+    size_t type_size;
 } vector;
 
-typedef void **vec_iterator;
+typedef void ** vec_iterator;
 
 /* --------------------------------------------- */
 /*             Construct / destruct              */
@@ -30,15 +30,17 @@ void vector_destroy(vector *);
 /* --------------------------------------------- */
 
 /* Adds an element to the end of a vector */
-/* Takes as arguments a pointer to a vector and the variable we want to add */
-/* The variable we want to add must be lvalue (have an address) */
-#define vpush_back(vec,el) _vpush_back(vec,&(el))
+/* Takes as arguments a pointer to a vector and a variable whose value we want to */
+/* add to the vector */
+/* Variable must be lvalue (have an address) */
+#define vpush_back(vec,var) _vpush_back(vec,&(var))
 void _vpush_back(vector *, const void *);
 
 /* Inserts an element into a vector before the iterator */
-/* Takes as arguments a pointer to a vector, an iterator, and the variable we want to add */
-/* The variable we want to add must be lvalue (have an address) */
-#define vinsert(vec,it,el) _vinsert(vec,it,&(el))
+/* Takes as arguments a pointer to a vector, an iterator, and a variable whose value we */
+/* want to add to the vector */
+/* Variable must be lvalue (have an address) */
+#define vinsert(vec,it,var) _vinsert(vec,it,&(var))
 void _vinsert(vector *, const vec_iterator, const void *);
 
 /* --------------------------------------------- */
@@ -61,7 +63,7 @@ void verase(vector *, vec_iterator);
 /* Takes as arguments a pointer to a vector, a new size, and a variable whose value */
 /* will be used by default if the new size is larger than the current size of the vector */
 /* Variable must be lvalue (have an address) */
-#define vresize(vec,new_size,el) _vresize(vec,new_size,&(el))
+#define vresize(vec,new_size,var) _vresize(vec,new_size,&(var))
 void _vresize(vector *, const size_t, const void *);
 
 /* Clears the vector but does not change the capacity */
@@ -102,21 +104,21 @@ void *_vback(const vector *);
 /* Takes as arguments a pointer to a vector, an index, and a variable whose value will be */
 /* used as the new value of the variable located at the specified index */
 /* Variable must be lvalue (have an address) */
-#define vset(vec,ind,el) _vset(vec,ind,&(el))
+#define vset(vec,ind,var) _vset(vec,ind,&(var))
 void _vset(vector *, const size_t, const void *);
 
 /* Changes the value of the element pointed to by the iterator */
 /* Takes as arguments a pointer to a vector, an iterator, and a variable whose value will be */
 /* used as the new value of the variable pointed to by the iterator */
 /* Variable must be lvalue (have an address) */
-#define vset_it(vec,it,el) _vset_it(vec,it,&(el))
+#define vset_it(vec,it,var) _vset_it(vec,it,&(var))
 void _vset_it(vector *, vec_iterator, const void *);
 
 /* Replaces the contents of a vector with arg3, repeating it arg2 times */
 /* Takes as arguments a pointer to a vector, the number of elements, and a variable */
 /* whose value will be used to fill the vector */
 /* Variable must be lvalue (have an address) */
-#define vassign_single(vec,count,el) _vassign_single(vec,count,&(el))
+#define vassign_single(vec,count,var) _vassign_single(vec,count,&(var))
 void _vassign_single(vector *, const size_t, const void *);
 
 /* Replaces the contents of a vector with elements from a half-open range ("[a,b)") */
@@ -141,8 +143,8 @@ vec_iterator vbegin(const vector *);
 vec_iterator vend(const vector *);
 
 /* Moves the iterator by the specified number of elements */
-/* Takes as arguments an iterator and the number of shifts (a negative number means */
-/* we move backwards, a positive number means we move forward) */
+/* Takes as arguments a pointer to an iterator and the number of shifts (a negative */
+/* number means we move backwards, a positive number means we move forward) */
 void vadvance(vec_iterator *, const int);
 
 /* Returns the value of the element pointed to by the iterator (dereference iterator) */
@@ -176,10 +178,11 @@ unsigned vempty(const vector *);
 void vsort(vector *, int (*)(const void *, const void *));
 
 /* Finds an element in a vector */
-/* Takes as arguments a pointer to a vector, an element and a comparator */
+/* Takes as arguments a pointer to a vector, a variable whose value we want to search for, */
+/* and a comparator */
 /* Variable must be lvalue (have an address) */
-#define vfind(vec,el,comp) _vfind(vec, &(el), comp)
-vec_iterator _vfind(const vector *, const void *, int (*)(const void*, const void*));
+#define vfind(vec,var,comp) _vfind(vec,&(var),comp)
+vec_iterator _vfind(const vector *, const void *, int (*)(const void *, const void *));
 
 /* --------------------------------------------- */
 /*              Auxiliary functions              */
